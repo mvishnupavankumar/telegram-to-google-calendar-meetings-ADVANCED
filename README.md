@@ -1,97 +1,112 @@
-# telegram-to-google-calendar-meetings-ADVANCED
+ GIT HUB WRITER
+Custom Gem
+🧠 Smart Calendar Manager for Telegram
+📋 Description
+This project acts as your personal assistant for managing meetings and checking your schedule directly through Telegram. It simplifies how you interact with your calendar by understanding your natural language commands. Whether you want to set up a new meeting or find out what’s on your agenda for a specific day or period, this tool handles it all without you needing to open your calendar application.
 
----
+It solves the problem of juggling multiple apps to stay organized. Instead, it provides a seamless way to manage your time and commitments just by chatting with a Telegram bot, making scheduling effortless and quick.
 
-## 🧩 Workflow Overview
+🔍 How It Works
+Trigger: The workflow starts when you send a message to your Telegram bot.
 
-### 1. **Telegram Trigger**
-- Captures a message from the user.
-- Routes it via a `Switch` node to decide the intent.
+Steps:
 
-### 2. **LLM-Powered Parsing**
-- If setting a meeting, the message is passed to OpenRouter's Mistral model with custom prompt engineering.
-- Extracts: `MEETING`, `DATE`, `TIME`, `LINK`
+The message is analyzed to determine if you want to create a new meeting or check existing ones.
 
-### 3. **Data Cleaning and Formatting**
-- JS code node splits and parses LLM output.
-- Converts time to ISO format in IST timezone.
-- Prepares calendar-friendly event JSON.
+If you want to create a meeting, an AI extracts details like meeting title, date, time, and link from your message. These details are then formatted and added to your Google Calendar.
 
-### 4. **Create Google Calendar Event**
-- Uses Google Calendar OAuth2 to create a new event.
-- Adds title, link, time, and location.
+If you want to check your schedule, the AI interprets your requested date or date range and searches your Google Calendar for events within that period.
 
-### 5. **Confirmation**
-- After creating the event, sends a formatted success message to Telegram.
+The workflow then compiles the relevant meeting information.
 
-### 6. **Calendar Event Lookup**
-- If the intent was `check` or `free`, extracts just the `DATE` using LLM and fetches all events for that day.
+End Result: You receive a confirmation message in Telegram for newly created meetings, or a list of your scheduled events for the requested period.
 
----
+🚀 Use Cases
+Quickly schedule meetings: Just type "Set up a meeting for Project Alpha tomorrow at 10 AM, link meet.google.com/abc" and it's added to your calendar.
 
-## 🛠️ Requirements
+Check your daily agenda: Ask "What's on my calendar for next Tuesday?" and receive a list of all your meetings for that day.
 
-- [n8n](https://n8n.io/)
-- A [Telegram Bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot)
-- A [Google Calendar](https://developers.google.com/calendar) OAuth2 connection
-- An [OpenRouter](https://openrouter.ai) API Key
-- Enable timezone as `Asia/Kolkata` (UTC+5:30)
+Find free slots: Inquire "Check my free time for this weekend" to get an overview of your availability.
 
----
+🛠️ Setup Instructions
+Import the JSON into your automation tool (like n8n).
 
-## 🔐 Credentials
+Enter your own API keys or credentials in the appropriate fields for Google Calendar and Telegram.
 
-You need to add the following credentials in n8n:
+Replace placeholder URLs and IDs (e.g., your_telegram_id, your_url, your_authorization, your_email@example.com) with your actual values.
 
-- **Telegram API** – For Telegram Bot connection
-- **Google Calendar OAuth2** – To create/fetch calendar events
-- **OpenRouter API Key** – For making LLM calls to extract meeting data
+Activate the workflow.
 
----
+⚠️ You don’t need to code — just follow the step-by-step settings in the visual interface.
 
-## 🧪 Supported Commands (via Telegram)
+🧩 Requirements
+n8n installed locally or using n8n cloud
 
-| Command | Function |
-|--------|----------|
-| `set meeting with Alice tomorrow 3pm` | Creates a calendar event |
-| `arrange a call with team next Friday 11am` | Creates a calendar event |
-| `check meetings for 5th July` | Lists all events |
-| `free on 7th July?` | Lists all events (can add free slot detection logic) |
+Telegram bot token and chat ID
 
----
+Google Calendar API key/OAuth2 credentials
 
-## 📂 Files Included
+OpenRouter/LLM API key for AI natural language processing (used for your_url and your_authorization)
 
-- `n8n-workflow.json` – Full exported workflow
-- `README.md` – This documentation
+🤖 Example Input JSON
+JSON
 
----
+{
+  "name": "MEETINGS WORKFLOW TO CALENDER FROM TELEGRAM",
+  "nodes": [
+    {
+      "type": "n8n-nodes-base.telegramTrigger",
+      "parameters": {
+        "updates": ["message"]
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "your_url",
+        "jsonBody": "= {\n  \"model\": \"mistralai/mistral-7b-instruct\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a meeting data extractor...\"\n    },\n    {\n      "role": "user",
+      "content": "{{ $json.message.text }}"
+    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "name": "TAKES MEETING DETAILS1"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "value": "your_email@example.com"
+        },
+        "start": "= {{ $json.start.dateTime }}",
+        "end": "= {{ $json.end.dateTime }}",
+        "additionalFields": {
+          "description": "=<a href=\"{{ $json.description }}\">Join Meeting</a>",
+          "location": "Asia/Kolkata",
+          "summary": "= {{ $json.summary }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "name": "Create an event"
+    }
+  ]
+}
+✨ Output
+For meeting creation requests: A Telegram message confirming the meeting has been set, including its title, start time, and end time.
 
-## 📸 Example Output
+For schedule inquiry requests: A Telegram message listing events found for the specified date(s), including event title, date, time (if applicable), and a link to the event. If no events are found, it will state "NO MEETINGS FOR THE GIVEN [date/date range]".
 
-**Telegram User Input:**
+📎 Notes
+Supports natural language time and date expressions like “tomorrow 5pm,” “next Tuesday morning,” "this month," or "next 3 days."
 
----
+Uses IST timezone (UTC+5:30) for all calendar operations and time conversions.
 
-## 🚀 How to Use
+Works out of the box after replacing the token values and credential details.
 
-1. Clone this repo.
-2. Import the `n8n-workflow.json` file into your n8n instance.
-3. Set up credentials:
-   - Telegram Bot Token
-   - Google Calendar OAuth2
-   - OpenRouter API Key
-4. Activate workflow.
-5. Start chatting with your Telegram bot!
-
----
-
-## 📞 Need Help?
-
-Create an issue in the repo or contact the creator on Telegram.
-
----
-
-## ⚖️ License
-
-MIT License – use and modify freely.

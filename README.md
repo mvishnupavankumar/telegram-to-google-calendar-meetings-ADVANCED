@@ -1,5 +1,4 @@
- GIT HUB WRITER
-Custom Gem
+
 🧠 Smart Calendar Manager for Telegram
 📋 Description
 This project acts as your personal assistant for managing meetings and checking your schedule directly through Telegram. It simplifies how you interact with your calendar by understanding your natural language commands. Whether you want to set up a new meeting or find out what’s on your agenda for a specific day or period, this tool handles it all without you needing to open your calendar application.
